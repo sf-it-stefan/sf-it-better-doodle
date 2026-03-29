@@ -224,7 +224,14 @@ class FormController extends Controller
 
     private function storeHeaderImage($file, Form $form): string
     {
-        $filename = $form->id . '.' . $file->getClientOriginalExtension();
+        $ext = match ($file->getMimeType()) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+            default => 'jpg',
+        };
+        $filename = $form->id . '.' . $ext;
         $file->storeAs('uploads/headers', $filename, 'public');
         return $filename;
     }

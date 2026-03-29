@@ -74,9 +74,23 @@ class FormEntryController extends Controller
 
     public function download(Form $form, FormEntry $entry, string $fieldId)
     {
+        if ($entry->form_id !== $form->id) {
+            abort(404);
+        }
+
+        $validFieldIds = $form->fields()->pluck('id')->all();
+        if (!in_array($fieldId, $validFieldIds, true)) {
+            abort(404);
+        }
+
         $fileData = $entry->data[$fieldId] ?? null;
 
         if (!$fileData || !is_array($fileData) || !isset($fileData['path'])) {
+            abort(404);
+        }
+
+        $expectedPrefix = 'uploads/entries/' . $form->id . '/' . $entry->id . '/';
+        if (!str_starts_with($fileData['path'], $expectedPrefix)) {
             abort(404);
         }
 
@@ -84,6 +98,10 @@ class FormEntryController extends Controller
             abort(404);
         }
 
-        return Storage::download($fileData['path'], $fileData['original_name'] ?? 'download');
+        return Storage::download(
+            $fileData['path'],
+            $fileData['original_name'] ?? 'download',
+            ['X-Content-Type-Options' => 'nosniff']
+        );
     }
 }

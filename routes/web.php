@@ -13,7 +13,7 @@ Route::redirect('/', '/admin');
 
 // Auth
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login']);
+Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Admin (auth required)
@@ -30,7 +30,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
 // Public form routes
 Route::get('/f/{slug}', [PublicFormController::class, 'show'])->name('form.show');
-Route::post('/f/{slug}', [PublicFormController::class, 'submit'])->name('form.submit');
+Route::post('/f/{slug}', [PublicFormController::class, 'submit'])->middleware('throttle:10,1')->name('form.submit');
 Route::get('/f/{slug}/thanks', [PublicFormController::class, 'thanks'])->name('form.thanks');
 Route::get('/f/{slug}/edit/{token}', [PublicFormController::class, 'edit'])->name('form.edit');
-Route::put('/f/{slug}/edit/{token}', [PublicFormController::class, 'update'])->name('form.update');
+Route::put('/f/{slug}/edit/{token}', [PublicFormController::class, 'update'])->middleware('throttle:10,1')->name('form.update');
