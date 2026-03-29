@@ -1,0 +1,11 @@
+# Local development overrides — automatically loaded by docker compose
+# Bind-mounts source code for live reload, vendor installed in named volume
+services:
+  app:
+    volumes:
+      - uploads-data:/var/www/html/storage/app/public/uploads
+      - .:/var/www/html
+      - vendor-data:/var/www/html/vendor
+
+volumes:
+  vendor-data:

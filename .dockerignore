@@ -1,0 +1,14 @@
+vendor/
+node_modules/
+.git/
+.env
+.env.backup
+storage/logs/
+tests/
+phpunit.xml
+CLAUDE.md
+docker-compose.yml
+docker-compose.override.yml
+docker-compose.prod.yml
+.dockerignore
+backups/

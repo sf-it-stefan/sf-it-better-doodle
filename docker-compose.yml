@@ -1,0 +1,50 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    expose:
+      - "80"
+    networks:
+      - internal
+      - docker-nginx-proxy_default
+    environment:
+      - VIRTUAL_HOST=${VIRTUAL_HOST:-better-doodle.sf-it.app}
+      - VIRTUAL_PORT=80
+      - LETSENCRYPT_HOST=${VIRTUAL_HOST:-better-doodle.sf-it.app}
+      - LETSENCRYPT_EMAIL=admin@sf-it.at
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - uploads-data:/var/www/html/storage/app/public/uploads
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    networks:
+      - internal
+    environment:
+      POSTGRES_DB: better_doodle
+      POSTGRES_USER: better_doodle
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U better_doodle"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  uploads-data:
+
+networks:
+  internal:
+  docker-nginx-proxy_default:
+    name: docker-nginx-proxy_default
+    external: true
