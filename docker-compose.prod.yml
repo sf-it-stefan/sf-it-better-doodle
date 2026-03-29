@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/sf-it-stefan/better-doodle:latest
+    image: ghcr.io/sf-it-stefan/sf-it-better-doodle:latest
     # Production: no source bind-mount, no vendor volume — image contains everything
     volumes:
       - uploads-data:/var/www/html/storage/app/public/uploads

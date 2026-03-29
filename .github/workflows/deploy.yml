@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/sf-it-stefan/better-doodle
+  IMAGE_NAME: ghcr.io/sf-it-stefan/sf-it-better-doodle
 
 jobs:
   build:
