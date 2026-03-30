@@ -38,11 +38,11 @@ class GenerateIcons extends Command
         $padding = $maskable ? (int)($size * 0.2) : (int)($size * 0.12);
         $contentSize = $size - ($padding * 2);
 
-        // Glasses dimensions
-        $logoWidth = (int)($contentSize * 0.85);
+        // Glasses dimensions — shifted up to leave room for text
+        $logoWidth = (int)($contentSize * 0.80);
         $logoHeight = (int)($logoWidth * 0.46);
         $logoX = ($size - $logoWidth) / 2;
-        $logoY = ($size - $logoHeight) / 2 - ($maskable ? 0 : (int)($size * 0.04));
+        $logoY = $padding + (int)($contentSize * 0.05);
 
         $eyeWidth = (int)($logoWidth * 0.45);
         $eyeHeight = $logoHeight;
@@ -77,6 +77,25 @@ class GenerateIcons extends Command
         $rightCx = $rightX + (int)($eyeWidth / 2) + $pupilOffsetX;
         $rightCy = (int)$logoY + (int)($eyeHeight / 2) + $pupilOffsetY;
         imagefilledellipse($img, $rightCx, $rightCy, $pupilSize, $pupilSize, $black);
+
+        // "B-D" text below the glasses
+        $fontPath = '/usr/share/fonts/noto/NotoSans-Bold.ttf';
+        $text = 'B-D';
+        $textFontSize = (int)($size * 0.14);
+        if (file_exists($fontPath)) {
+            $bbox = imagettfbbox($textFontSize, 0, $fontPath, $text);
+            $textWidth = $bbox[2] - $bbox[0];
+            $textX = ($size - $textWidth) / 2;
+            $textY = (int)$logoY + $logoHeight + (int)($contentSize * 0.22);
+            imagettftext($img, $textFontSize, 0, (int)$textX, (int)$textY, $teal, $fontPath, $text);
+        } else {
+            // Bitmap fallback
+            $charWidth = imagefontwidth(5);
+            $textWidth = strlen($text) * $charWidth;
+            $textX = ($size - $textWidth) / 2;
+            $textY = (int)$logoY + $logoHeight + (int)($size * 0.05);
+            imagestring($img, 5, (int)$textX, (int)$textY, $text, $teal);
+        }
 
         imagepng($img, $path);
         imagedestroy($img);
