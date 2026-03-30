@@ -1,6 +1,11 @@
 @extends('layouts.public')
 
 @section('title', $form->title . ' - ' . $t['form_closed'])
+@section('og_title', $form->title)
+@section('og_description', $t['form_closed'])
+@if($form->header_image)
+    @section('og_image', asset('storage/uploads/headers/' . $form->header_image))
+@endif
 
 @section('content')
 <div class="bg-surface border border-white/10 rounded-2xl p-6 sm:p-8 text-center">

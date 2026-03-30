@@ -28,6 +28,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('settings/change-password', [SettingsController::class, 'changePassword'])->name('settings.change-password');
 });
 
+// OG image
+Route::get('/og/default.png', [App\Http\Controllers\OgImageController::class, 'default'])->name('og.default');
+
 // Public form routes
 Route::get('/f/{slug}', [PublicFormController::class, 'show'])->name('form.show');
 Route::post('/f/{slug}', [PublicFormController::class, 'submit'])->middleware('throttle:10,1')->name('form.submit');

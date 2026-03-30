@@ -5,6 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Form') - {{ config('app.name') }}</title>
+
+    {{-- Open Graph / Social sharing --}}
+    @hasSection('og_title')
+        <meta property="og:title" content="@yield('og_title')">
+    @else
+        <meta property="og:title" content="@yield('title', 'Form') - {{ config('app.name') }}">
+    @endif
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    @hasSection('og_description')
+        <meta name="description" content="@yield('og_description')">
+        <meta property="og:description" content="@yield('og_description')">
+    @else
+        <meta name="description" content="Fill out this form on {{ config('app.name') }}">
+        <meta property="og:description" content="Fill out this form on {{ config('app.name') }}">
+    @endif
+    @hasSection('og_image')
+        <meta property="og:image" content="@yield('og_image')">
+        <meta name="twitter:card" content="summary_large_image">
+    @else
+        <meta property="og:image" content="{{ url('/og/default.png') }}">
+        <meta name="twitter:card" content="summary">
+    @endif
+    <meta property="og:site_name" content="{{ config('app.name') }}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])

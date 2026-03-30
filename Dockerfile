@@ -18,6 +18,7 @@ RUN apk add --no-cache \
     postgresql-dev \
     libzip-dev \
     icu-dev \
+    font-noto \
     libpng-dev \
     libjpeg-turbo-dev \
     freetype-dev \

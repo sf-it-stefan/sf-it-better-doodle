@@ -1,6 +1,11 @@
 @extends('layouts.public')
 
 @section('title', $form->title)
+@section('og_title', $form->title)
+@section('og_description', Str::limit(strip_tags($form->description ?? ''), 160, '...') ?: 'Fill out this form on ' . config('app.name'))
+@if($form->header_image)
+    @section('og_image', asset('storage/uploads/headers/' . $form->header_image))
+@endif
 
 @section('content')
 <div x-data="formPage()">
