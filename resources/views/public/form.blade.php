@@ -32,7 +32,9 @@
         <div class="p-6 sm:p-8">
             <h1 class="text-2xl font-bold text-white mb-2">{{ $form->title }}</h1>
             @if($form->description)
-                <p class="text-white/60 text-sm mb-6 whitespace-pre-line">{{ $form->description }}</p>
+                <div class="text-white/60 text-sm mb-6 prose-sm prose-invert prose-a:text-brand-400 prose-a:underline [&>p]:mb-2 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-2 [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-2 [&>p:last-child]:mb-0">
+                    {!! Str::markdown($form->description, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                </div>
             @endif
 
             @if($form->active_until)

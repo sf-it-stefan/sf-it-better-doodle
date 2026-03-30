@@ -122,7 +122,8 @@ class PublicFormController extends Controller
             }
 
             match ($field->type) {
-                FieldType::Text, FieldType::SecretText => $fieldRules[] = 'string|max:500',
+                FieldType::Text => $this->addTextValidation($fieldRules, $field),
+                FieldType::SecretText => $fieldRules[] = 'string|max:500',
                 FieldType::Textarea => $fieldRules[] = 'string|max:5000',
                 FieldType::Select => $this->addSelectValidation($fieldRules, $field),
                 FieldType::MultiSelect => $this->addMultiSelectValidation($fieldRules, $field),
@@ -136,6 +137,23 @@ class PublicFormController extends Controller
             $rules[$key] = implode('|', $fieldRules);
         }
         return $rules;
+    }
+
+    private function addTextValidation(array &$rules, $field): void
+    {
+        $datatype = $field->options['datatype'] ?? 'text';
+
+        if ($datatype === 'number') {
+            $rules[] = 'numeric';
+            if (isset($field->options['min'])) {
+                $rules[] = 'min:' . $field->options['min'];
+            }
+            if (isset($field->options['max'])) {
+                $rules[] = 'max:' . $field->options['max'];
+            }
+        } else {
+            $rules[] = 'string|max:500';
+        }
     }
 
     private function addSelectValidation(array &$rules, $field): void

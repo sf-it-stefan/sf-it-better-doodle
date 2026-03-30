@@ -51,6 +51,40 @@
                                         class="w-full rounded-lg border-0 py-1.5 px-3 bg-surface text-gray-100 ring-1 ring-inset ring-surface-lighter focus:ring-2 focus:ring-brand-500 text-sm">
                                 </div>
 
+                                {{-- Text field: data type --}}
+                                <template x-if="field.type === 'text'">
+                                    <div>
+                                        <label class="block text-xs text-white/50 mb-2">Data Type</label>
+                                        <div class="flex gap-2 mb-3">
+                                            <button type="button" @click="if(!field.options) field.options = {}; field.options.datatype = 'text'"
+                                                :class="(!field.options?.datatype || field.options?.datatype === 'text') ? 'bg-brand-500/20 border-brand-500/40 text-brand-300' : 'bg-surface border-surface-lighter text-white/50'"
+                                                class="px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors">Text</button>
+                                            <button type="button" @click="if(!field.options) field.options = {}; field.options.datatype = 'number'"
+                                                :class="field.options?.datatype === 'number' ? 'bg-brand-500/20 border-brand-500/40 text-brand-300' : 'bg-surface border-surface-lighter text-white/50'"
+                                                class="px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors">Number</button>
+                                        </div>
+                                        <template x-if="field.options?.datatype === 'number'">
+                                            <div class="grid grid-cols-3 gap-2">
+                                                <div>
+                                                    <label class="block text-xs text-white/40 mb-1">Min</label>
+                                                    <input type="number" x-model="field.options.min" placeholder="—"
+                                                        class="w-full rounded-lg border-0 py-1.5 px-3 bg-surface text-gray-100 ring-1 ring-inset ring-surface-lighter focus:ring-2 focus:ring-brand-500 text-sm">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs text-white/40 mb-1">Max</label>
+                                                    <input type="number" x-model="field.options.max" placeholder="—"
+                                                        class="w-full rounded-lg border-0 py-1.5 px-3 bg-surface text-gray-100 ring-1 ring-inset ring-surface-lighter focus:ring-2 focus:ring-brand-500 text-sm">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs text-white/40 mb-1">Step</label>
+                                                    <input type="number" x-model="field.options.step" placeholder="1" step="any"
+                                                        class="w-full rounded-lg border-0 py-1.5 px-3 bg-surface text-gray-100 ring-1 ring-inset ring-surface-lighter focus:ring-2 focus:ring-brand-500 text-sm">
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+
                                 {{-- Select / Multi-select options --}}
                                 <template x-if="field.type === 'select' || field.type === 'multi_select'">
                                     <div>
@@ -142,6 +176,7 @@
                     <label class="block text-sm font-medium text-gray-300 mb-1">Description</label>
                     <textarea name="description" rows="3"
                         class="w-full rounded-lg border-0 py-2 px-3 bg-surface-light text-gray-100 ring-1 ring-inset ring-surface-lighter focus:ring-2 focus:ring-brand-500 text-sm">{{ old('description', $form?->description) }}</textarea>
+                    <p class="text-xs text-white/30 mt-1">Supports basic Markdown: **bold**, *italic*, [links](url), lists</p>
                 </div>
 
                 <div>
