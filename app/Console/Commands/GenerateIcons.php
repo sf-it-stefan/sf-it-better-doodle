@@ -86,7 +86,7 @@ class GenerateIcons extends Command
             $bbox = imagettfbbox($textFontSize, 0, $fontPath, $text);
             $textWidth = $bbox[2] - $bbox[0];
             $textX = ($size - $textWidth) / 2;
-            $textY = (int)$logoY + $logoHeight + (int)($contentSize * 0.22);
+            $textY = (int)$logoY + $logoHeight + (int)($contentSize * 0.35);
             imagettftext($img, $textFontSize, 0, (int)$textX, (int)$textY, $teal, $fontPath, $text);
         } else {
             // Bitmap fallback
