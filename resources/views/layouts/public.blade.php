@@ -96,6 +96,24 @@
     }
     </script>
 
+    <script>
+    // Public pages don't register a service worker, but they may still be
+    // controlled by the one registered from the admin side. If so, force an
+    // update check and reload once the fixed worker takes control — this
+    // self-heals the stale worker without relying on auto-update timing.
+    // Kept dependency-free so it runs even when the CDN-served Alpine.js is
+    // blocked by the stale worker.
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        let swReloading = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (swReloading) return;
+            swReloading = true;
+            window.location.reload();
+        });
+        navigator.serviceWorker.getRegistration().then((reg) => reg && reg.update());
+    }
+    </script>
+
     @yield('scripts')
 </body>
 </html>

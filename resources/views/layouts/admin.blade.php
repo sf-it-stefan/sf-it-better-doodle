@@ -115,7 +115,16 @@
     }
 
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js');
+        // When a new service worker takes control (e.g. after the fetch-handler
+        // fix ships), reload once so the page is served by the fixed worker
+        // immediately instead of on some later navigation.
+        let swReloading = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (swReloading) return;
+            swReloading = true;
+            window.location.reload();
+        });
+        navigator.serviceWorker.register('/sw.js').then((reg) => reg.update());
     }
     </script>
 </body>
