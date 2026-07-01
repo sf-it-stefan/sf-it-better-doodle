@@ -54,8 +54,8 @@
         </nav>
 
         <header class="bg-surface border-b border-surface-lighter">
-            <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex items-center justify-between">
-                <h1 class="text-3xl font-bold tracking-tight text-gray-100">@yield('heading')</h1>
+            <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-100 break-words">@yield('heading')</h1>
                 @yield('heading_actions')
             </div>
         </header>

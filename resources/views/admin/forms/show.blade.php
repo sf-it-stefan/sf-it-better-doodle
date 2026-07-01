@@ -4,7 +4,7 @@
 @section('heading', $form->title)
 
 @section('heading_actions')
-<div class="flex items-center gap-2">
+<div class="flex flex-wrap items-center gap-2">
     <a href="{{ route('admin.forms.entries', $form) }}" class="rounded-lg bg-surface-lighter px-4 py-2 text-sm text-gray-300 hover:bg-surface-light transition-colors">
         Responses ({{ $form->entries_count }})
     </a>
@@ -89,14 +89,16 @@
         <h2 class="text-sm font-medium text-white/50 uppercase tracking-wider mb-4">Form Fields</h2>
         <div class="space-y-2">
             @foreach($form->fields as $field)
-                <div class="flex items-center gap-3 bg-surface-light border border-surface-lighter rounded-lg px-4 py-3">
-                    <span class="text-xs text-brand-400 font-mono uppercase w-24">{{ $field->type->label() }}</span>
-                    <span class="text-white">{{ $field->label }}</span>
-                    @if($field->required)
-                        <span class="text-xs text-red-400/60">required</span>
-                    @endif
+                <div class="flex flex-col gap-2 bg-surface-light border border-surface-lighter rounded-lg px-4 py-3 sm:flex-row sm:items-center sm:gap-3">
+                    <span class="shrink-0 text-xs text-brand-400 font-mono uppercase sm:w-24">{{ $field->type->label() }}</span>
+                    <div class="flex flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                        <span class="text-white">{{ $field->label }}</span>
+                        @if($field->required)
+                            <span class="text-xs text-red-400/60">required</span>
+                        @endif
+                    </div>
                     @if($field->description)
-                        <span class="text-xs text-white/30 ml-auto">{{ Str::limit($field->description, 40) }}</span>
+                        <span class="text-xs text-white/30 sm:text-right">{{ Str::limit($field->description, 40) }}</span>
                     @endif
                 </div>
             @endforeach
