@@ -6,6 +6,7 @@ use App\Enums\FieldType;
 use App\FormTranslations;
 use App\Models\Form;
 use App\Models\FormEntry;
+use App\Models\FormField;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -134,8 +135,39 @@ class PublicFormController extends Controller
                 default => null,
             };
 
+            if ($field->type === FieldType::DateSlots) {
+                $rules[$key] = $this->dateSlotRules($field);
+                $rules[$key . '.*'] = 'string|in:yes,maybe,no';
+                continue;
+            }
+
             $rules[$key] = implode('|', $fieldRules);
         }
+        return $rules;
+    }
+
+    /**
+     * A required slot field needs a usable answer, not merely a present one —
+     * an all-"no" submission is a filled-in form with nothing to schedule.
+     */
+    private function dateSlotRules(FormField $field): array
+    {
+        $rules = ['array'];
+
+        if (!$field->required) {
+            return ['nullable', ...$rules];
+        }
+
+        $rules[] = 'required';
+        $rules[] = function (string $attribute, $value, $fail) {
+            $states = is_array($value) ? $value : [];
+            $positive = array_filter($states, fn ($s) => in_array($s, ['yes', 'maybe'], true));
+
+            if (empty($positive)) {
+                $fail('Please mark at least one slot as available.');
+            }
+        };
+
         return $rules;
     }
 
@@ -204,9 +236,47 @@ class PublicFormController extends Controller
                 $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
             }
 
+            if ($field->type === FieldType::DateSlots) {
+                $value = $this->normalizeSlotAnswers($field, is_array($value) ? $value : []);
+            }
+
             $data[$field->id] = $value;
         }
         return $data;
+    }
+
+    /**
+     * Answers are stored as {slotId: yes|maybe|no} covering every slot the field
+     * currently offers, so the heatmap can tell "said no" from "never answered".
+     * Ids the field no longer defines are dropped.
+     */
+    private function normalizeSlotAnswers(FormField $field, array $submitted): array
+    {
+        $multi = $field->dateSlotsMultiSelect();
+        $states = [];
+        $picked = false;
+
+        foreach ($field->dateSlots() as $slot) {
+            $id = FormField::dateSlotId($slot);
+            $state = $submitted[$id] ?? 'no';
+
+            if (!in_array($state, ['yes', 'maybe', 'no'], true)) {
+                $state = 'no';
+            }
+
+            // A single-select field can only carry one positive answer.
+            if (!$multi && $state !== 'no') {
+                if ($picked) {
+                    $state = 'no';
+                } else {
+                    $picked = true;
+                }
+            }
+
+            $states[$id] = $state;
+        }
+
+        return $states;
     }
 
     private function storeBase64Image(string $base64, string $formId, string $entryId, string $fieldId): string

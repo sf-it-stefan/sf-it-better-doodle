@@ -4,7 +4,12 @@
 @section('heading', 'Responses: ' . $form->title)
 
 @section('heading_actions')
-<div class="flex items-center gap-2">
+<div class="flex flex-wrap items-center gap-2">
+    @if($form->fields->contains('type', \App\Enums\FieldType::DateSlots))
+        <a href="{{ route('admin.forms.availability', $form) }}" class="rounded-lg bg-brand-500/15 border border-brand-500/40 px-4 py-2 text-sm text-brand-200 hover:bg-brand-500/25 transition-colors">
+            Find a date
+        </a>
+    @endif
     <a href="{{ route('admin.forms.entries.export', $form) }}" class="rounded-lg bg-surface-lighter px-4 py-2 text-sm text-gray-300 hover:bg-surface-light transition-colors">
         Export CSV
     </a>
@@ -15,64 +20,62 @@
 @endsection
 
 @section('content')
-<div class="bg-surface border border-surface-lighter rounded-xl overflow-hidden">
-    @if($entries->isEmpty())
-        <div class="px-6 py-12 text-center">
-            <p class="text-white/40">No responses yet.</p>
+@php
+    $query = ['search' => $search ?: null, 'sort' => $sort === 'newest' ? null : $sort];
+    $linkContext = array_filter($query + ['view' => $view === 'cards' ? null : $view]);
+@endphp
+
+{{-- Toolbar --}}
+<div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+    <form method="GET" action="{{ route('admin.forms.entries', $form) }}" class="flex-1 flex gap-2">
+        <input type="hidden" name="view" value="{{ $view }}">
+        <input type="hidden" name="sort" value="{{ $sort }}">
+        <input type="search" name="search" value="{{ $search }}" placeholder="Search responses&hellip;"
+               class="flex-1 rounded-lg border-0 py-2 px-3 bg-surface text-gray-100 ring-1 ring-inset ring-surface-lighter focus:ring-2 focus:ring-brand-500 text-sm placeholder:text-white/25">
+        <button type="submit" class="rounded-lg bg-surface-lighter px-4 py-2 text-sm text-gray-300 hover:bg-surface-light transition-colors">Search</button>
+        @if($search)
+            <a href="{{ route('admin.forms.entries', array_filter([$form, 'view' => $view === 'cards' ? null : $view])) }}"
+               class="rounded-lg px-3 py-2 text-sm text-white/40 hover:text-white/70 transition-colors">Clear</a>
+        @endif
+    </form>
+
+    <div class="flex items-center gap-2">
+        <a href="{{ route('admin.forms.entries', array_filter([$form] + $query + ['view' => $view, 'sort' => $sort === 'oldest' ? null : 'oldest'])) }}"
+           class="rounded-lg bg-surface-lighter px-3 py-2 text-sm text-gray-300 hover:bg-surface-light transition-colors whitespace-nowrap">
+            {{ $sort === 'oldest' ? 'Oldest first' : 'Newest first' }}
+        </a>
+
+        <div class="flex rounded-lg bg-surface-lighter p-0.5">
+            @foreach(['cards' => 'Cards', 'table' => 'Table'] as $mode => $label)
+                <a href="{{ route('admin.forms.entries', array_filter([$form] + $query + ['view' => $mode === 'cards' ? null : $mode])) }}"
+                   class="rounded-md px-3 py-1.5 text-sm transition-colors {{ $view === $mode ? 'bg-surface text-white' : 'text-white/50 hover:text-white/80' }}">
+                    {{ $label }}
+                </a>
+            @endforeach
+        </div>
+    </div>
+</div>
+
+@if($entries->isEmpty())
+    <div class="bg-surface border border-surface-lighter rounded-xl px-6 py-12 text-center">
+        <p class="text-white/40">{{ $search ? 'No responses match that search.' : 'No responses yet.' }}</p>
+    </div>
+@else
+    {{-- Table is opt-in and desktop-only; a 10-column grid is unusable on a phone
+         regardless of the remembered preference, so cards win under lg. --}}
+    @if($view === 'table')
+        <div class="hidden lg:block">
+            @include('admin.entries._table', ['linkContext' => $linkContext])
+        </div>
+        <div class="lg:hidden">
+            @include('admin.entries._cards', ['linkContext' => $linkContext])
         </div>
     @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="text-left text-white/50 text-xs uppercase tracking-wider">
-                        <th class="px-4 py-3">Submitted</th>
-                        <th class="px-4 py-3">IP</th>
-                        @foreach($form->fields as $field)
-                            <th class="px-4 py-3">{{ Str::limit($field->label, 20) }}</th>
-                        @endforeach
-                        <th class="px-4 py-3"></th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-surface-lighter">
-                    @foreach($entries as $entry)
-                    <tr class="hover:bg-surface-light/50">
-                        <td class="px-4 py-3 text-white/60 whitespace-nowrap">
-                            <span x-data x-text="new Date('{{ $entry->created_at->toIso8601String() }}').toLocaleString()">{{ $entry->created_at->format('M j, Y g:i A') }}</span>
-                        </td>
-                        <td class="px-4 py-3 text-white/40 text-xs font-mono whitespace-nowrap">{{ $entry->ip_address }}</td>
-                        @foreach($form->fields as $field)
-                            <td class="px-4 py-3 text-white/80 max-w-xs truncate">
-                                @php $value = $entry->data[$field->id] ?? null; @endphp
-                                @if($field->type === \App\Enums\FieldType::FileUpload && is_array($value) && isset($value['original_name']))
-                                    <a href="{{ route('admin.forms.entries.download', [$form, $entry, $field->id]) }}" class="text-brand-400 hover:text-brand-300 text-xs underline">{{ $value['original_name'] }}</a>
-                                @elseif($field->type === \App\Enums\FieldType::SecretText && $value)
-                                    <span class="text-white/30 text-xs italic">hidden</span>
-                                @elseif(is_array($value))
-                                    {{ implode(', ', $value) }}
-                                @elseif($field->type === \App\Enums\FieldType::ImageUpload && $value)
-                                    <img src="{{ asset('storage/' . $value) }}" class="w-10 h-10 rounded object-cover" alt="">
-                                @elseif($field->type === \App\Enums\FieldType::Checkbox)
-                                    {{ $value ? 'Yes' : 'No' }}
-                                @else
-                                    {{ Str::limit((string)$value, 50) }}
-                                @endif
-                            </td>
-                        @endforeach
-                        <td class="px-4 py-3 text-right">
-                            <form method="POST" action="{{ route('admin.forms.entries.destroy', [$form, $entry]) }}" onsubmit="return confirm('Delete this entry?')" class="inline">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="text-red-400/50 hover:text-red-400 text-xs">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-
-        <div class="px-6 py-4 border-t border-surface-lighter">
-            {{ $entries->links() }}
-        </div>
+        @include('admin.entries._cards', ['linkContext' => $linkContext])
     @endif
-</div>
+
+    <div class="mt-4">
+        {{ $entries->links() }}
+    </div>
+@endif
 @endsection
