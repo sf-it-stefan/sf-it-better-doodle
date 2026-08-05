@@ -8,6 +8,11 @@
     <a href="{{ route('admin.forms.entries', $form) }}" class="rounded-lg bg-surface-lighter px-4 py-2 text-sm text-gray-300 hover:bg-surface-light transition-colors">
         Responses ({{ $form->entries_count }})
     </a>
+    @if($form->fields->contains('type', \App\Enums\FieldType::DateSlots))
+        <a href="{{ route('admin.forms.availability', $form) }}" class="rounded-lg bg-surface-lighter px-4 py-2 text-sm text-gray-300 hover:bg-surface-light transition-colors">
+            Find a date
+        </a>
+    @endif
     <a href="{{ route('admin.forms.edit', $form) }}" class="rounded-lg bg-surface-lighter px-4 py-2 text-sm text-gray-300 hover:bg-surface-light transition-colors">
         Edit
     </a>

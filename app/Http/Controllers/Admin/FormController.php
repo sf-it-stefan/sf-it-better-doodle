@@ -98,21 +98,19 @@ class FormController extends Controller
         $form->load('fields');
 
         $existingFields = $form->fields->map(function ($f) {
-            $isDateSlots = $f->type === FieldType::DateSlots;
-            $multiSelect = $isDateSlots && is_array($f->options) && isset($f->options[0]['multi_select'])
-                ? $f->options[0]['multi_select']
-                : false;
+            $options = $f->type === FieldType::DateSlots
+                ? ['multi_select' => $f->dateSlotsMultiSelect(), 'slots' => $f->dateSlots()]
+                : $f->options;
 
             return [
                 'id' => $f->id,
                 'type' => $f->type->value,
                 'label' => $f->label,
                 'description' => $f->description,
-                'options' => $f->options,
+                'options' => $options,
                 'required' => $f->required,
                 '_key' => $f->id,
                 '_expanded' => false,
-                '_multiSelect' => $multiSelect,
             ];
         })->values()->toArray();
 

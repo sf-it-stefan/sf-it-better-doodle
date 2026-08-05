@@ -1,14 +1,104 @@
 @php
-    $slots = $field->options ?? [];
-    $isMulti = !empty($slots[0]['multi_select']);
-    $selectedValues = is_array($value) ? $value : ($value ? [$value] : []);
+    use App\Models\FormField;
 
-    // Group slots by date
+    $slots = $field->dateSlots();
+    $isMulti = $field->dateSlotsMultiSelect();
+
+    // Legacy entries stored a flat list of chosen ids; new ones store states.
+    $initial = [];
+    if (is_array($value)) {
+        if (array_is_list($value)) {
+            foreach ($value as $id) {
+                $initial[(string) $id] = 'yes';
+            }
+        } else {
+            $initial = $value;
+        }
+    } elseif ($value) {
+        $initial[(string) $value] = 'yes';
+    }
+
+    $fieldId = $field->id;
+
+    $slotLabels = [
+        'yes' => $t['slot_available'],
+        'maybe' => $t['slot_maybe'],
+        'no' => $t['slot_unavailable'],
+    ];
+
     $groupedSlots = collect($slots)->groupBy('date');
+
+    // Distinct time ranges across all days become the grid's rows; days become
+    // its columns. A day that skips a row simply leaves that cell blank.
+    $dates = $groupedSlots->keys()->sort()->values();
+    $timeRows = collect($slots)
+        ->map(fn ($s) => [
+            'key' => ($s['start_time'] ?? '') . '-' . ($s['end_time'] ?? ''),
+            'start_time' => $s['start_time'] ?? '',
+            'end_time' => $s['end_time'] ?? '',
+        ])
+        ->unique('key')
+        ->sortBy(fn ($r) => $r['start_time'] . $r['end_time'])
+        ->values();
+
+    $cells = [];
+    foreach ($slots as $slot) {
+        $key = ($slot['start_time'] ?? '') . '-' . ($slot['end_time'] ?? '');
+        $cells[$key][$slot['date'] ?? ''] = FormField::dateSlotId($slot);
+    }
+
+    // A stacked list stays friendlier for a handful of slots; the grid earns its
+    // density only once there are several days or several times per day.
+    $useGrid = $dates->count() > 2 || $timeRows->count() > 3;
+
+    $dateHeaders = $dates->map(fn ($d) => [
+        'kind' => 'date',
+        'iso' => $d,
+        'top' => \Carbon\Carbon::parse($d)->format('D'),
+        'bottom' => \Carbon\Carbon::parse($d)->format('j M'),
+        'aria' => \Carbon\Carbon::parse($d)->format('D j M'),
+    ]);
+
+    $timeHeaders = $timeRows->map(fn ($r) => [
+        'kind' => 'time',
+        'key' => $r['key'],
+        'start_time' => $r['start_time'],
+        'end_time' => $r['end_time'],
+        'aria' => $r['start_time'],
+    ]);
+
+    // Days go across only while they are the smaller axis. A two-week poll with
+    // four times a day would otherwise need 14 columns and horizontal scrolling;
+    // flipped, it is 4 columns and scrolls vertically like the rest of the page.
+    $transpose = $dates->count() > $timeRows->count();
+    $rowHeaders = $transpose ? $dateHeaders : $timeHeaders;
+    $colHeaders = $transpose ? $timeHeaders : $dateHeaders;
+
+    $grid = [];
+    foreach ($rowHeaders as $ri => $row) {
+        foreach ($colHeaders as $ci => $col) {
+            $timeKey = $transpose ? $col['key'] : $row['key'];
+            $dateIso = $transpose ? $row['iso'] : $col['iso'];
+
+            $grid[$ri][$ci] = [
+                'id' => $cells[$timeKey][$dateIso] ?? null,
+                'aria' => $transpose
+                    ? $row['aria'] . ' ' . $col['aria']
+                    : $col['aria'] . ' ' . $row['aria'],
+            ];
+        }
+    }
 @endphp
 
-<div x-data="dateSlotPicker(@js($selectedValues), @js($isMulti))">
-    <fieldset>
+{{-- (object) matters: an empty PHP array serialises to [], and Alpine cannot
+     track string keys added to an Array. --}}
+<div x-data="dateSlotPicker(@js((object) $initial), @js($isMulti), @js($slotLabels))"
+     @pointerup.window="endPaint()">
+    {{-- min-w-0 undoes the browser's default `min-width: min-content` on
+         fieldset, which otherwise stops the grid's scroll container from
+         shrinking — the overflowing columns then get clipped by the card
+         instead of becoming scrollable. --}}
+    <fieldset class="min-w-0">
         <legend class="block text-sm font-medium text-white mb-1">
             {{ $field->label }}
             @if($field->required) <span class="text-red-400">*</span> @endif
@@ -17,79 +107,93 @@
             <p class="text-xs text-white/40 mb-2">{{ $field->description }}</p>
         @endif
         @if($isMulti)
-            <p class="text-xs text-white/30 mb-3">{{ $t['select_all_that_apply'] }}</p>
+            <p class="text-xs text-white/30 mb-3">
+                {{ $useGrid ? $t['slot_drag_hint'] : $t['slot_cycle_hint'] }}
+            </p>
         @else
             <p class="text-xs text-white/30 mb-3">{{ $t['select_one'] }}</p>
         @endif
 
-        <div class="space-y-4">
-            @foreach($groupedSlots as $date => $dateSlots)
-                <div>
-                    <p class="text-xs text-white/50 font-medium uppercase tracking-wider mb-2"
-                       x-data x-text="new Date('{{ $date }}T00:00:00').toLocaleDateString(undefined, {weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'})">
-                        {{ \Carbon\Carbon::parse($date)->format('l, F j, Y') }}
-                    </p>
-                    <div class="space-y-2">
-                        @foreach($dateSlots as $slot)
-                            @php
-                                $slotId = $date . '_' . ($slot['start_time'] ?? 'allday') . '_' . ($slot['end_time'] ?? '');
-                            @endphp
-                            <button type="button"
-                                @click="toggle('{{ $slotId }}')"
-                                :class="selected.includes('{{ $slotId }}')
-                                    ? 'bg-brand-500/20 border-brand-500 text-brand-300'
-                                    : 'bg-white/5 border-white/10 text-white/60 hover:border-white/30'"
-                                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left"
-                                role="checkbox"
-                                :aria-checked="selected.includes('{{ $slotId }}')">
-                                <span class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all"
-                                    :class="selected.includes('{{ $slotId }}') ? 'border-brand-400 bg-brand-400' : 'border-white/30'">
-                                    <svg x-show="selected.includes('{{ $slotId }}')" class="w-3 h-3 text-black" fill="currentColor" viewBox="0 0 12 12">
-                                        <path d="M10 3L5 8.5 2 5.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
-                                    </svg>
-                                </span>
-                                <span class="text-sm font-medium">
-                                    @if(!empty($slot['start_time']) && !empty($slot['end_time']))
-                                        <span x-data x-text="formatTime('{{ $slot['start_time'] }}') + ' \u2013 ' + formatTime('{{ $slot['end_time'] }}')">
-                                            {{ $slot['start_time'] }} &ndash; {{ $slot['end_time'] }}
-                                        </span>
-                                    @elseif(!empty($slot['start_time']))
-                                        <span x-data x-text="formatTime('{{ $slot['start_time'] }}')">{{ $slot['start_time'] }}</span>
-                                    @else
-                                        All day
-                                    @endif
-                                </span>
-                            </button>
-                        @endforeach
-                    </div>
-                </div>
-            @endforeach
-        </div>
+        @if($useGrid)
+            @include('public.fields.partials.slot-grid')
+        @else
+            @include('public.fields.partials.slot-list')
+        @endif
 
-        {{-- Hidden input for form submission --}}
-        <template x-for="s in selected" :key="s">
-            <input type="hidden" name="field_{{ $field->id }}[]" :value="s">
+        @if($isMulti)
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-[11px] text-white/40">
+                <span class="inline-flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-sm bg-brand-500"></span>{{ $t['slot_available'] }}
+                </span>
+                <span class="inline-flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-sm bg-amber-500/70"></span>{{ $t['slot_maybe'] }}
+                </span>
+                <span class="inline-flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-sm bg-white/10 border border-white/15"></span>{{ $t['slot_unavailable'] }}
+                </span>
+            </div>
+        @endif
+
+        {{-- One input per slot, so "no" is recorded rather than merely absent.
+             x-for needs Object.entries here — it does not iterate plain objects. --}}
+        <template x-for="[id, state] in Object.entries(states)" :key="id">
+            <input type="hidden" :name="`field_{{ $fieldId }}[${id}]`" :value="state">
         </template>
     </fieldset>
 </div>
 
 <script>
-function dateSlotPicker(initial, isMulti) {
+function dateSlotPicker(initial, isMulti, labels) {
     return {
-        selected: initial || [],
+        states: initial || {},
         isMulti: isMulti,
-        toggle(id) {
-            if (this.isMulti) {
-                const idx = this.selected.indexOf(id);
-                if (idx > -1) {
-                    this.selected.splice(idx, 1);
-                } else {
-                    this.selected.push(id);
-                }
-            } else {
-                this.selected = this.selected.includes(id) ? [] : [id];
+        labels: labels,
+        painting: null,
+
+        state(id) {
+            return this.states[id] || 'no';
+        },
+
+        labelFor(state) {
+            return this.labels[state] ?? state;
+        },
+
+        nextState(state) {
+            return { no: 'yes', yes: 'maybe', maybe: 'no' }[state];
+        },
+
+        set(id, state) {
+            if (!this.isMulti) {
+                Object.keys(this.states).forEach(k => this.states[k] = 'no');
             }
-        }
+            this.states[id] = state;
+        },
+
+        cycle(id) {
+            if (!this.isMulti) {
+                const wasChosen = this.state(id) === 'yes';
+                Object.keys(this.states).forEach(k => this.states[k] = 'no');
+                this.states[id] = wasChosen ? 'no' : 'yes';
+                return;
+            }
+            this.states[id] = this.nextState(this.state(id));
+        },
+
+        // Drag-paint: the first cell decides the state, the rest of the drag
+        // copies it. Mouse only — touch drags scroll the page instead.
+        startPaint(id) {
+            this.cycle(id);
+            this.painting = this.isMulti ? this.state(id) : null;
+        },
+
+        paintOver(id) {
+            if (this.painting === null) return;
+            this.set(id, this.painting);
+        },
+
+        endPaint() {
+            this.painting = null;
+        },
     };
 }
 

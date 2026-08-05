@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\FormAvailabilityController;
 use App\Http\Controllers\Admin\FormController;
 use App\Http\Controllers\Admin\FormEntryController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -21,6 +22,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
     Route::resource('forms', FormController::class);
     Route::get('forms/{form}/entries', [FormEntryController::class, 'index'])->name('forms.entries');
+    Route::get('forms/{form}/availability', [FormAvailabilityController::class, 'show'])->name('forms.availability');
+    Route::post('forms/{form}/availability/confirm', [FormAvailabilityController::class, 'confirm'])->name('forms.availability.confirm');
+    Route::get('forms/{form}/entries/{entry}', [FormEntryController::class, 'show'])->name('forms.entries.show');
     Route::delete('forms/{form}/entries/{entry}', [FormEntryController::class, 'destroy'])->name('forms.entries.destroy');
     Route::get('forms/{form}/export', [FormEntryController::class, 'export'])->name('forms.entries.export');
     Route::get('forms/{form}/entries/{entry}/download/{fieldId}', [FormEntryController::class, 'download'])->name('forms.entries.download');

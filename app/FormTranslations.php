@@ -13,6 +13,14 @@ class FormTranslations
             'select_placeholder' => 'Select an option...',
             'select_all_that_apply' => 'Select all that apply',
             'select_one' => 'Select one option',
+
+            // Date slot availability
+            'slot_available' => 'Available',
+            'slot_maybe' => 'If need be',
+            'slot_unavailable' => 'No',
+            'slot_cycle_hint' => 'Tap a slot to cycle: available → if need be → no.',
+            'slot_drag_hint' => 'Tap a slot to cycle: available → if need be → no. Drag to mark several at once.',
+            'confirmed_date' => 'Confirmed date',
             'open_until' => 'Open until',
             'drop_image' => 'Drop an image or click to select',
             'image_formats' => 'JPEG, PNG, WebP',
@@ -59,6 +67,14 @@ class FormTranslations
             'select_placeholder' => 'Option auswählen...',
             'select_all_that_apply' => 'Wähle alle zutreffenden aus',
             'select_one' => 'Wähle eine Option',
+
+            // Date slot availability
+            'slot_available' => 'Passt',
+            'slot_maybe' => 'Zur Not',
+            'slot_unavailable' => 'Nein',
+            'slot_cycle_hint' => 'Tippe auf einen Termin: passt → zur Not → nein.',
+            'slot_drag_hint' => 'Tippe auf einen Termin: passt → zur Not → nein. Ziehen markiert mehrere auf einmal.',
+            'confirmed_date' => 'Bestätigter Termin',
             'open_until' => 'Offen bis',
             'drop_image' => 'Bild hierher ziehen oder klicken',
             'image_formats' => 'JPEG, PNG, WebP',

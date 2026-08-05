@@ -49,6 +49,19 @@
                 </div>
             @endif
 
+            @php $confirmedSlot = $form->settings['confirmed_slot'] ?? null; @endphp
+            @if($confirmedSlot)
+                <div class="mb-6 rounded-xl border border-brand-500/50 bg-brand-500/10 px-4 py-4 flex items-start gap-3">
+                    <svg class="w-5 h-5 shrink-0 text-brand-400 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <div>
+                        <p class="text-xs uppercase tracking-wider text-brand-300/70">{{ $t['confirmed_date'] }}</p>
+                        <p class="text-lg font-semibold text-white">{{ $confirmedSlot['label'] }}</p>
+                    </div>
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="mb-6 rounded-lg bg-red-500/10 border border-red-500/20 p-4">
                     <ul class="list-disc list-inside text-sm text-red-400">

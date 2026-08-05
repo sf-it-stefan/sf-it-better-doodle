@@ -27,6 +27,41 @@
     --color-surface-dark: #0a0a0a;
 }
 
+/* Availability grid. The column count is dynamic (--slot-cols), so the track
+   sizes live here rather than in an inline style, which cannot hold a media
+   query — that is what pushed the last column off-screen on phones.
+   Cells never shrink below 2.75rem (44px, the WCAG touch-target minimum);
+   the grid scrolls sideways instead of squeezing the tap targets. */
+.slot-grid {
+    display: grid;
+    gap: 0.25rem;
+    grid-template-columns: auto repeat(var(--slot-cols), minmax(2.75rem, 1fr));
+    /* max-content lets the label column keep its full width and the grid spill
+       into a scroll; min-width keeps it filling the card when it does fit. */
+    width: max-content;
+    min-width: 100%;
+}
+
+@media (min-width: 640px) {
+    .slot-grid {
+        grid-template-columns: auto repeat(var(--slot-cols), minmax(3rem, 1fr));
+    }
+}
+
+/* Pin the row labels so you can still tell which row you are tapping once the
+   grid is scrolled sideways. */
+.slot-grid > .slot-rowhead {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: var(--color-surface);
+}
+
+/* Hide Alpine-controlled elements until Alpine boots */
+[x-cloak] {
+    display: none !important;
+}
+
 /* Logo animation */
 @keyframes eye-spin {
     0% { transform: translate(0, 0); }
