@@ -1,6 +1,32 @@
+# Memory ceilings
+# ---------------
+# This stack shares one 7.7 GB host without swap with about ten unrelated
+# projects. Without a ceiling, a leak in any container is a host-wide
+# outage: the kernel picks its victim by memory score, so a leak here can
+# get somebody else's Postgres killed. With one, the cgroup OOM killer takes
+# the container that actually misbehaved and the rest of the host never
+# notices. They are caps, not reservations — the host overcommits them.
+#
+# memswap_limit is 2x each ceiling so these keep working unchanged if host
+# swap is ever added — equal values would silently forbid swap.
+#
+# Set here and not in docker-compose.yml on purpose: local development runs
+# composer and builds in the same containers and should not be throttled.
+
 services:
   app:
     image: ghcr.io/sf-it-stefan/sf-it-better-doodle:latest
+    # Measured on the host: ~95 MiB idle (nginx, supervisor, the scheduler
+    # loop and two php-fpm children at ~30 MiB RSS each, most of it shared
+    # opcache) and about 125 MiB at its peak during boot, with migrate and
+    # the artisan caches.
+    # The ceiling is set by what the runtime can legitimately reach instead:
+    # php-fpm scales to 10 children, opcache may fill its 128 MiB segment,
+    # and PHP's memory_limit lets a single request take 128 MiB. 512M covers
+    # a full pool with a few heavy requests among them, and PHP aborts a
+    # runaway request at 128M long before the cgroup would act.
+    mem_limit: 512m
+    memswap_limit: 1024m
     # Production: no source bind-mount, no vendor volume — image contains everything
     volumes:
       - uploads-data:/var/www/html/storage/app/public/uploads
@@ -9,6 +35,13 @@ services:
       - VIRTUAL_PORT=80
       - LETSENCRYPT_HOST=better-doodle.sf-it.app
       - LETSENCRYPT_EMAIL=admin@sf-it.at
+
+  postgres:
+    # ~50 MiB in use (an 8 MB database). Stock settings bound the rest:
+    # 128 MiB shared_buffers, 64 MiB maintenance_work_mem for autovacuum,
+    # and a pool that never holds more than a handful of connections.
+    mem_limit: 256m
+    memswap_limit: 512m
 
 networks:
   docker-nginx-proxy_default:
